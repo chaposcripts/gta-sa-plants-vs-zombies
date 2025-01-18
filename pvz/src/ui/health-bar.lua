@@ -3,7 +3,7 @@ local GUI_BAR_SIZE = imgui.ImVec2(50, 5);
 
 ---@type Hero | Enemy
 return function(entity, isEnemy)
-    if (not doesCharExist(entity.handle)) then
+    if (not doesCharExist(entity.handle) or not isCharOnScreen(entity.handle)) then
         return;
     end
     local BGDL = imgui.GetBackgroundDrawList();

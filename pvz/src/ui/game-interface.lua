@@ -45,5 +45,5 @@ return function(res, style, heroes, money, cb)
         end
         imgui.PopStyleVar();
     end
-    imgui.EndChild();
+    imgui.End();
 end

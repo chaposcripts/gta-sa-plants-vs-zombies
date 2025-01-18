@@ -1,4 +1,4 @@
----@diagnostic disable:lowercase-global
+---@diagnostic disable:deprecated,lowercase-global
 ---@class Vector3D
 ---@field x number
 ---@field y number
@@ -16,58 +16,88 @@ local Vector3D = require('vector3d');
 local Map = require('map');
 local Camera = require('camera');
 local Utils = require('utils');
-local Heroe = require('hero');
 local Heroes = require('heroes');
 local Enemies = require('enemy');
+local RakNet = require('raknet');
 local uiComponents = {
     mainMenu = require('ui.main-menu'),
     gameInterface = require('ui.game-interface'),
-    healthBar = require('ui.health-bar')
+    healthBar = require('ui.health-bar'),
+    logo = {
+        base85 = require('resource.logo'),
+        texture = nil
+    }
 };
-
+local color = '{914dff}';
 local GameState = {
     None = 0,
     Menu = 1,
     Playing = 2
 };
 
-local state = GameState.Playing;
-local placeHero = nil;
-local money = 999;
-local saved = {
-    pos = Vector3D(0, 0, 0);
+local Game = {
+    saved = {
+        heading = 0,
+        pos = Vector3D(0, 0, 0)
+    },
+    state = GameState.Menu,
+    money = 200,
+    heroToPlace = nil
 };
+
+function Game.destroy()
+    Heroes.destroy();
+    Enemies.destroy();
+    Map.destroy();
+    Game.state = GameState.Menu;
+    setCharCoordinates(PLAYER_PED, Game.saved.pos.x, Game.saved.pos.y, Game.saved.pos.z);
+    Camera.restore();
+    RakNet.nop = false;
+end
+
+function Game.start()
+    Game.saved = {
+        heading = getCharHeading(PLAYER_PED),
+        pos = Vector3D(getCharCoordinates(PLAYER_PED))
+    };
+        
+    Map.init();
+    Enemies.init();
+    Camera.init(Vector3D(Map.pos.x + 17, Map.pos.y - 1, Map.pos.z + 20), Vector3D(Map.pos.x + 17, Map.pos.y + 11, Map.pos.z));
+    -- Camera.update();
+    setCharCoordinates(PLAYER_PED, Map.pedPos.x, Map.pedPos.y, Map.pedPos.z);
+    setCharHeading(PLAYER_PED, Map.pedHeading);
+    Game.state = GameState.Playing;
+    RakNet.nop = true;
+end
 
 addEventHandler('onScriptTerminate', function(scr)
     if (scr == thisScript()) then
-        if (saved.pos.x ~= 0) then
-            setCharCoordinates(PLAYER_PED, saved.pos.x, saved.pos.y, saved.pos.z);
+        if (Game.saved.pos.x ~= 0) then
+            setCharCoordinates(PLAYER_PED, Game.saved.pos.x, Game.saved.pos.y, Game.saved.pos.z);
         end
     end
 end);
 
-function destroy()
-    Heroes.destroy();
-    Enemies.destroy();
-    Map.destroy();
-    state = GameState.Menu;
-end
-
 function main()
     while not isSampAvailable() do wait(0) end
+    Utils.msg(('Plants Vs Zombies - GTA:SA Edition by %schapo {ffffff}a.k.a %smoujeek'):format(color, color));
+    Utils.msg(('See %sgithub.com/chaposcripts'):format(color));
     Heroes.init();
     sampRegisterChatCommand('pvz', function()
-        
-        saved.pos = Vector3D(getCharCoordinates(PLAYER_PED));
-        
-        Map.init();
-        Enemies.init();
-        Camera.init(Vector3D(Map.pos.x + 20, Map.pos.y - 5, Map.pos.z + 20), Vector3D(Map.pos.x + 20, Map.pos.y + 5, Map.pos.z));
-        -- Camera.update();
-        setCharCoordinates(PLAYER_PED, Map.pos.x, Map.pos.y, Map.pos.z);
-
-        -- Enemies.Enemy:new(1, 1);
-        state = GameState.Playing;
+        if (Game.state == GameState.Playing) then
+            Game.state = GameState.Menu;
+            return Game.destroy();
+        elseif (Game.state == GameState.Menu) then
+            Game.state = GameState.None;
+        elseif (Game.state == GameState.None) then
+            Game.state = GameState.Menu;
+        end
+        Utils.msg('Current state:', Game.state);
+    end);
+    sampRegisterChatCommand('pvz.money', function(amount)
+        Game.money = tonumber(amount) or 1000;
+        Utils.msg('Money set to', color, Game.money);
     end);
     sampRegisterChatCommand('pvz.pool', function()
         Utils.msg('Enemy pool size:', #Enemies.pool);
@@ -75,46 +105,49 @@ function main()
     end);
     while (true) do
         wait(0);
-        local gp = Map.getGridPos(1, 0);
-        local x, y = convert3DCoordsToScreen(gp.x, gp.y, gp.z);
-        renderDrawPolygon(x, y, 10, 10, 10, 10, 0xFF00ff00)
+        print(Game.state);
+        if (Game.state == GameState.Playing) then
+            local gp = Map.getGridPos(1, 0);
+            local x, y = convert3DCoordsToScreen(gp.x, gp.y, gp.z);
+            renderDrawPolygon(x, y, 10, 10, 10, 10, 0xFF00ff00)
 
-        -- Draw hovered grid outline
-        if (placeHero) then
-            local line, index, pos = Map.getGridForCoord(Map.getPointerPos(nil));
-            if (pos) then
-                local x1, y1 = convert3DCoordsToScreen(pos.x - 2.5, pos.y - 2.5, pos.z);
-                local x2, y2 = convert3DCoordsToScreen(pos.x + 2.5, pos.y + 2.5, pos.z);
-                local x3, y3 = convert3DCoordsToScreen(pos.x - 2.5, pos.y + 2.5, pos.z);
-                local x4, y4 = convert3DCoordsToScreen(pos.x + 2.5, pos.y - 2.5, pos.z);
-                renderDrawLine(x1, y1, x3, y3, 2, 0x33ffffff);
-                renderDrawLine(x1, y1, x4, y4, 2, 0x33ffffff);
-                renderDrawLine(x2, y2, x4, y4, 2, 0x33ffffff);
-                renderDrawLine(x3, y3, x2, y2, 2, 0x33ffffff);
+            -- Draw hovered grid outline
+            if (Game.heroToPlace) then
+                local line, index, pos = Map.getGridForCoord(Map.getPointerPos(nil));
+                if (line ~= -1 and pos) then
+                    local x1, y1 = convert3DCoordsToScreen(pos.x - 2.5, pos.y - 2.5, pos.z);
+                    local x2, y2 = convert3DCoordsToScreen(pos.x + 2.5, pos.y + 2.5, pos.z);
+                    local x3, y3 = convert3DCoordsToScreen(pos.x - 2.5, pos.y + 2.5, pos.z);
+                    local x4, y4 = convert3DCoordsToScreen(pos.x + 2.5, pos.y - 2.5, pos.z);
+                    renderDrawLine(x1, y1, x3, y3, 2, 0xFFffffff);
+                    renderDrawLine(x1, y1, x4, y4, 2, 0xFFffffff);
+                    renderDrawLine(x2, y2, x4, y4, 2, 0xFFffffff);
+                    renderDrawLine(x3, y3, x2, y2, 2, 0xFFffffff);
+                end
+                if (wasKeyPressed(VK_LBUTTON)) then
+                    sampAddChatMessage(('Placed hero with type "%s" to (%d:%d)'):format(Game.heroToPlace, line, index), 0xFF00ff00);
+                    Heroes.Hero:new(Game.heroToPlace, line, index)
+                    Game.money = Game.money - Game.heroToPlace.price;
+                    Game.heroToPlace = nil;
+                elseif (wasKeyPressed(VK_RBUTTON)) then
+                    Game.heroToPlace = nil;
+                end
             end
-            if (wasKeyPressed(1)) then
-                sampAddChatMessage(('Placed hero with type "%s" to (%d:%d)'):format(placeHero, line, index), 0xFF00ff00);
-                -- Heroes.Hero:new(placeHero, pos);
-                Heroes.Hero:new(placeHero, line, index)
-                placeHero = nil;
-            end
-        end
 
-        -- Check enemies position, X <= 0 == zombies won
-        table.foreach(Enemies.pool, function(_, enemy)
-            if (doesCharExist(enemy.handle) and select(1, getCharCoordinates(enemy.handle)) <= 0) then
-                destroy();
-                Utils.msg('You loose!');
-            end
-        end);
+            -- Check enemies position, X <= 0 == zombies won
+            table.foreach(Enemies.pool, function(_, enemy)
+                if (doesCharExist(enemy.handle) and select(1, getCharCoordinates(enemy.handle)) <= 0) then
+                    Game.destroy();
+                    Utils.msg('You loose!');
+                end
+            end);
 
-        -- Processing
-        if (state == GameState.Playing) then
+            -- Processing
             Heroes.process(Enemies.pool);
             Enemies.process(Enemies.pool, Heroes.pool);
             Map.process(Enemies.pool, {
                 onSunTaked = function()
-                    money = money + 50;
+                    Game.money = Game.money + 50;
                     printStringNow('~y~+50', 1250);
                 end,
                 spawnEnemy = function(type)
@@ -133,6 +166,8 @@ end
 
 imgui.OnInitialize(function()
     imgui.GetIO().IniFilename = nil;
+    uiComponents.logo.texture = imgui.CreateTextureFromFileInMemory(imgui.new('const char*', uiComponents.logo.base85), #uiComponents.logo.base85);
+
     Heroes.loadTextures();
 
     local style = imgui.GetStyle();
@@ -147,34 +182,43 @@ imgui.OnInitialize(function()
 end);
 
 imgui.OnFrame(
-    function() return state ~= GameState.None end,
+    function() return Game.state ~= GameState.None end,
     function(thisWindow)
+        thisWindow.HideCursor = true;
+
         table.foreach(Enemies.pool, function(k, v)
             uiComponents.healthBar(v, true);
         end);
         table.foreach(Heroes.pool, function(k, v)
             uiComponents.healthBar(v, false);
         end);
-        thisWindow.HideCursor = true;
+        
         local res = imgui.ImVec2(getScreenResolution());
         local style = imgui.GetStyle();
-        if (state == GameState.Menu) then
-            -- uiComponents.mainMenu(res, style);
-        elseif (state == GameState.Playing) then
+        if (Game.state == GameState.Menu) then
+            uiComponents.mainMenu(res, style, uiComponents.logo.texture, { ---@diagnostic disable-line
+                onExit = function()
+                    Game.state = GameState.None;
+                end,
+                onPlay = function()
+                    Game.start();
+                end
+            });
+        elseif (Game.state == GameState.Playing) then
             uiComponents.gameInterface(
                 res,
                 style, ---@diagnostic disable-line
                 Heroes.list,
-                money,
+                Game.money,
                 function(heroIndex)
                     Utils.msg('clicked');
                     local hero = Heroes.list[heroIndex];
                     if (not hero) then
                         return Utils.msg('Error, invalid hero index!');
                     end
-                    if (money >= hero.price) then
-                        placeHero = hero;
-                        money = money - hero.price;
+                    if (Game.money >= hero.price) then
+                        Game.heroToPlace = hero;
+                        Utils.msg('Place hero to any grid section. Click RMB to cancel.');
                     else
                         sampAddChatMessage('Dear Retard, you have not enough money to purchase this hero!', -1);
                     end

@@ -135,14 +135,6 @@ function Enemies.Enemy:process(heroPool)
     if (not self.disableProcess) then
         local currentPos = Vector3D(getCharCoordinates(self.handle));
         
-        -- Die if touching any vehicle
-        -- for _, vehicleHandle in ipairs(getAllVehicles()) do
-        --     if (isCharTouchingVehicle(self.handle, vehicleHandle)) then
-        --         self:death();
-        --         break;
-        --     end
-        -- end
-        
         local targetEndGrid = Map.getGridPos(self.line, 0);
 
         targetEndGrid.z = targetEndGrid.z + 1;
@@ -152,7 +144,7 @@ function Enemies.Enemy:process(heroPool)
         if (not isPlantFound or distanceToTarget > 1.5) then
             -- taskCharSlideToCoord(self.handle, 0, 0, 0, 0, 1);
             if (os.clock() - self.lastXUpdate > ENEMY_X_UPDATE_SPEED) then
-                self:setCoordinates(Vector3D(currentPos.x - (DEV and 0.5 or 0.01), currentPos.y, currentPos.z));
+                self:setCoordinates(Vector3D(currentPos.x - (DEV and 0.01 or 0.01), currentPos.y, currentPos.z));
                 self.lastXUpdate = os.clock();
             end
         else
@@ -167,9 +159,6 @@ function Enemies.Enemy:process(heroPool)
                 if (timeSinceLastAttack > self.attackInterval) then
                     for _, v in pairs(heroPool) do
                         if (v.handle == targetHandle) then
-                            -- self.route.from = Vector3D(getCharCoordinates(self.handle));
-                            -- self.spawnedAt = os.clock();
-
                             v:dealDamage(self.damage, self);
                             v:call('onDamageReceived', self.damage, self);
                             if (self.attackAnimation and hasAnimationLoaded(self.attackAnimation.file)) then
@@ -191,7 +180,6 @@ function Enemies.Enemy:process(heroPool)
             local x2, y2 = convert3DCoordsToScreen(targetEndGrid.x, targetEndGrid.y, targetEndGrid.z);
             renderDrawLine(x, y, x2, y2, 1, isPlantFound and 0xFFffff00 or 0xFF00ffff);
             renderFontDrawText(font, ('HP: %s\nTarget: %s\nDist: %0.2f\nDist to end: %0.2f\nX: %s'):format(tostring(self.health), tostring(isPlantFound), distanceToTarget, self:getDistanceToFinish(), self.x), x, y, 0xFFffffff, false);
-            -- print(self.startDist / ENEMY_MAP_PASS_TIME * self:getDistanceToFinish(), self.startDist)
         end
     end
 end

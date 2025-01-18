@@ -57,7 +57,7 @@ function Utils.getFilesInPath(path, ftype)
 end
 
 function Utils.msg(...)
-    sampAddChatMessage(('PvZ // {ffffff}%s'):format(table.concat({ ... }, ' ')), -1);
+    sampAddChatMessage(('PvZ // {ffffff}%s'):format(table.concat({ ... }, ' ')), 0xFF914dff);
 end
 
 return Utils;

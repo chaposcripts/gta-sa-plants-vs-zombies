@@ -3,6 +3,8 @@ local Object = require('object');
 
 local Map = {
     pos = Vector3D(0, 0, 100),
+    pedPos = Vector3D(-9.5483312606812, 9.7751541137695, 101.42999267578),
+    pedHeading = 180,
     vehicles = {},
     pool = {},
     lastEnemySpawned = os.clock()
@@ -10,8 +12,6 @@ local Map = {
 
 local VEHICLE_MODEL = 572;
 local GRID_SIZE = 5;
-local GRID_BOX_COUNT = 9 * 5;
-local GRID_BOX_IN_LINE = 9;
 
 function Map.destroy()
     for _, vehicle in pairs(Map.vehicles) do

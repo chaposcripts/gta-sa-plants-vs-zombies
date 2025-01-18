@@ -1,0 +1,17 @@
+{
+    "main": "/src/init.lua",
+    "modules": {
+        "map": "/src/map.lua",
+        "camera": "/src/camera.lua",
+        "utils": "/src/utils.lua",
+        "hero": "/src/hero.lua",
+        "heroes": "/src/heroes.lua",
+        "enemy": "/src/enemy.lua",
+        "raknet": "/src/raknet.lua",
+        "ui.main-menu": "/src/ui/main-menu.lua",
+        "ui.game-interface": "/src/ui/game-interface.lua",
+        "ui.health-bar": "/src/ui/health-bar.lua",
+        "resource.logo": "/src/resource/logo.lua"
+    },
+    "output": "/dist/release.lua"
+}

@@ -21,6 +21,7 @@ end});
 ---@field name string
 ---@field maxHealth number
 ---@field handle number
+---@field weapon? number
 ---@field price number
 ---@field health? number
 ---@field attackDistance? number
@@ -59,6 +60,13 @@ function Heroes.init()
             print('INFO: Loaded hero ', file)
         end
     end
+    -- Heroes.list = {
+    --     require('heroes.sunflower'),
+    --     require('heroes.pistol'),
+    --     require('heroes.rifle'),
+    --     require('heroes.big-boy'),
+    --     require('heroes.boxer')
+    -- };
 
     local modelsToLoad, animationsToLoad = {}, {};
 
@@ -108,7 +116,9 @@ end
 ---@param enemyPool Enemy[]
 function Heroes.process(enemyPool)
     for index, hero in ipairs(Heroes.pool) do
-        hero:process(index, enemyPool);
+        if (doesCharExist(hero.handle)) then
+            hero:process(index, enemyPool);
+        end
     end
 end
 
@@ -193,7 +203,7 @@ function Heroes.drawEntityHealthBar(entity)
 end
 
 function Heroes.Hero:die()
-    setCharCoordinates(self.handle, 0, 0, -100);
+    setCharCoordinates(self.handle, -100, -100, -100);
     self.target = nil;
     self.noTargetRequired = true;
     self:call('onDeath');
