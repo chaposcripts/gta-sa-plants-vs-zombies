@@ -1,3 +1,0 @@
-local EnemyType = {};
-
-return EnemyType;

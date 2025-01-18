@@ -1,5 +1,5 @@
-/pvz/config
-/pvz/image-compressor
-/pvz/lib
+/config
+/image-compressor
+/lib
 /src/hero.lua_unused
 /src/enemy__
