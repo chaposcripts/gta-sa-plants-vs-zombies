@@ -137,6 +137,7 @@ end
 
 ---@param indexInPool number
 function Heroes.Hero:process(indexInPool, enemyPool)
+    if (not doesCharExist(self.handle)) then return end
     if (DEV) then
         self:drawDebugInfo();
     end
@@ -209,6 +210,7 @@ function Heroes.Hero:kill()
     self.target = nil;
     self.noTargetRequired = true;
     self:call('onDeath');
+    self:destroy();
 end
 
 ---@param damage number

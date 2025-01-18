@@ -70,4 +70,9 @@ function Utils.msg(...)
     sampAddChatMessage(('PvZ // {ffffff}%s'):format(table.concat({ ... }, ' ')), 0xFF914dff);
 end
 
+function Utils.debugMsg(...)
+    if (not DEV) then return end
+    Utils.msg('{914dff}DEBUG // {ffffff}', ...);
+end
+
 return Utils;

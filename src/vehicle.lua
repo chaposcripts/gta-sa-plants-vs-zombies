@@ -57,12 +57,13 @@ function Vehicles.Vehicle:process(enemyPool, heroPool)
     local x, y, z = getCarCoordinates(self.handle);
     local sx, sy = convert3DCoordsToScreen(x, y, z);
     for _, entity in ipairs(Utils.mergeTable(enemyPool, heroPool)) do
+        if (not doesCharExist(entity.handle)) then return end
         if (DEV) then
             local ex, ey = convert3DCoordsToScreen(getCharCoordinates(entity.handle));
             renderDrawLine(sx, sy, ex, ey, 1, 0xFF0000ff);
         end
         if (getDistanceBetweenCoords3d(x, y, z, getCharCoordinates(entity.handle)) <= 1) then
-            Utils.msg('ped tounching veh, ped', entity.handle, 'veh', self.handle);
+            Utils.debugMsg('ped tounching veh, ped', entity.handle, 'veh', self.handle);
             if (not self.movementStartTime) then
                 self.movementStartTime = os.clock();
             end

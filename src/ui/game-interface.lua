@@ -4,7 +4,7 @@ local imgui = require('mimgui');
 ---@param res ImVec2
 ---@param style imgui.Style
 ---@param heroes any
-return function(res, style, heroes, money, cb)
+return function(res, style, heroes, money, uiComponents, cb)
     local heroIconSize = imgui.ImVec2(75, 75);
     imgui.SetNextWindowPos(imgui.ImVec2(res.x / 2, 100), imgui.Cond.Always, imgui.ImVec2(0.5, 0));
     if (imgui.Begin('plants-vs-zombies-gui', nil, imgui.WindowFlags.NoDecoration + imgui.WindowFlags.AlwaysAutoResize)) then
@@ -17,6 +17,7 @@ return function(res, style, heroes, money, cb)
             local dl = imgui.GetWindowDrawList();
             local cursorPos = imgui.GetCursorScreenPos();
             fgdl:AddCircleFilled(cursorPos + imgui.ImVec2(heroInfoSize.x / 2, heroInfoSize.y / 2 - 15), 30, imgui.GetColorU32Vec4(style.Colors[imgui.Col.Border]), 50);
+            fgdl:AddImage(uiComponents.sun.texture, cursorPos, cursorPos + imgui.ImVec2(75, 75));
             fgdl:AddRectFilled(cursorPos + imgui.ImVec2(0, 75), cursorPos + imgui.ImVec2(heroInfoSize.x, 75 + 25), 0xFFffffff, 5);
             local moneySize = imgui.CalcTextSize(tostring(money));
             fgdl:AddText(cursorPos + imgui.ImVec2(heroInfoSize.x / 2 - moneySize.x / 2, 80), 0xFF000000, tostring(money));
@@ -32,15 +33,18 @@ return function(res, style, heroes, money, cb)
                 local p = imgui.GetCursorScreenPos();
                 dl:AddImage(hero.texture, p, p + imgui.ImVec2(75, 75));
                 local color = imgui.GetColorU32Vec4(style.Colors[imgui.Col.ChildBg]);
-                dl:AddRectFilledMultiColor(p + imgui.ImVec2(0, 60), p + imgui.ImVec2(75, 100), 0x00ffffff, 0x00ffffff, color, color);
+                dl:AddRectFilledMultiColor(p + imgui.ImVec2(0, 0), p + imgui.ImVec2(75, 100), 0x00ffffff, 0x00ffffff, color, color);
                 local nameSize = imgui.CalcTextSize(hero.name);
                 dl:AddText(p + imgui.ImVec2(75 / 2 - nameSize.x / 2, 65), 0xFF000000, hero.name);
                 local priceSize = imgui.CalcTextSize(tostring(hero.price));
                 dl:AddText(p + imgui.ImVec2(75 / 2 - priceSize.x / 2, 80), 0xFF000000, tostring(hero.price));
             end
             imgui.EndChild();
-            if (imgui.IsMouseClicked(0) and imgui.IsMouseHoveringRect(pStart, pStart + imgui.ImVec2(75, 100))) then
-                cb(index);
+            if (imgui.IsMouseHoveringRect(pStart, pStart + imgui.ImVec2(75, 100))) then
+                fgdl:AddRect(pStart, pStart + imgui.ImVec2(75, 100), imgui.GetColorU32Vec4(style.Colors[imgui.Col.Border]), 5, nil, 7);
+                if (imgui.IsMouseClicked(0)) then
+                    cb(index);
+                end
             end
         end
         imgui.PopStyleVar();

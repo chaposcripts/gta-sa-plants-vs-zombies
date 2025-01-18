@@ -1,7 +1,8 @@
 local Map = require('map');
 local Utils = require('utils');
 local Vector3D = require('vector3d');
-
+local font = renderCreateFont('arial', 8, 5); -- For debug info
+local ENEMY_X_UPDATE_SPEED = 0.01;
 local Enemies = {
     Enemy = {},
     pool = {}
@@ -35,6 +36,7 @@ local EnemyType = {
 ---@field health? number
 ---@field x? number
 ---@field lastXUpdate? number
+
 
 ---@class Enemy
 
@@ -112,17 +114,7 @@ end
 function Enemies.Enemy:kill()
     setCharCoordinates(self.handle, 0, 0, -100);
     self.disableProcess = true;
-end
-local font = renderCreateFont('arial', 8, 5); -- For debug info
-local ENEMY_MAP_PASS_TIME = 100;
-local ENEMY_ROUTE_LENGTH = 50;
-local MAP_START = 50;
-local MAP_END = 0;
-local ENEMY_X_UPDATE_SPEED = 0.01;
----@param enemy Enemy
-local function calculateEnemyPosition(enemy)
-    
-    return 1;
+    self:destroy();
 end
 
 ---@return number
@@ -131,7 +123,7 @@ function Enemies.Enemy:getDistanceToFinish()
 end
 
 function Enemies.Enemy:process(heroPool)
-    -- print('Processing enemy', self.handle);
+    if (not doesCharExist(self.handle)) then return end
     if (not self.disableProcess) then
         local currentPos = Vector3D(getCharCoordinates(self.handle));
 
@@ -145,12 +137,21 @@ function Enemies.Enemy:process(heroPool)
             if (os.clock() - self.lastXUpdate > ENEMY_X_UPDATE_SPEED) then
                 self:setCoordinates(Vector3D(currentPos.x - (DEV and 0.3 or 0.01), currentPos.y, currentPos.z));
                 self.lastXUpdate = os.clock();
+                if (not self.isWalking) then
+                    taskCharSlideToCoord(self.handle, 0, 0, 0, 0, 1);
+                    self.isWalking = true;
+                end
             end
         else
             if (colpoint.entityType == 3) then
                 local targetHandle = getCharPointerHandle(colpoint.entity);
                 if (not doesCharExist(targetHandle)) then
                     return print('ERROR: cannot get target handle for enemy!');
+                end
+                if (self.isWalking) then
+                    clearCharTasksImmediately(self.handle);
+                    self.isWalking = false;
+                    Utils.debugMsg('clearCharTasksImmediately')
                 end
                 
                 -- Deal damage to target
@@ -161,7 +162,6 @@ function Enemies.Enemy:process(heroPool)
                             v:dealDamage(self.damage, self);
                             v:call('onDamageReceived', self.damage, self);
                             if (self.attackAnimation and hasAnimationLoaded(self.attackAnimation.file)) then
-                                clearCharTasksImmediately(self.handle);
                                 taskPlayAnim(self.handle, self.attackAnimation.name, self.attackAnimation.file, 4.0, false, true, true, true, 0);
                             else
                                 print('WARNING: Missing animation for enemy!');
@@ -181,12 +181,6 @@ function Enemies.Enemy:process(heroPool)
             renderFontDrawText(font, ('HP: %s\nTarget: %s\nDist: %0.2f\nDist to end: %0.2f\nX: %s'):format(tostring(self.health), tostring(isPlantFound), distanceToTarget, self:getDistanceToFinish(), self.x), x, y, 0xFFffffff, false);
         end
     end
-end
-
-
-function Enemies.Enemy:processMovement()
-    
-
 end
 
 ---@param damage number
@@ -230,6 +224,7 @@ function Enemies.Enemy:new(type, line, disableMovement)
     instance.handle = ped; ---@diagnostic disable-line
     instance.line = line;
     instance.lastAttack = os.clock();
+    instance.isWalking = false;
     instance.route = {
         from = spawnPos,
         to = Map.getGridPos(line, 0)
@@ -246,7 +241,7 @@ function Enemies.Enemy:new(type, line, disableMovement)
     local newMeta = setmetatable(instance, {__index = self});
     newMeta.startDist = newMeta:getDistanceToFinish();
     table.insert(Enemies.pool, newMeta);
-    Utils.msg('new enemy spawned, pool len:', #Enemies.pool);
+    Utils.debugMsg('new enemy spawned, pool len:', #Enemies.pool);
     return newMeta;
 end
 

@@ -26,6 +26,10 @@ local uiComponents = {
     logo = {
         base85 = require('resource.logo'),
         texture = nil
+    },
+    sun = {
+        base85 = require('resource.sun'),
+        texture = nil
     }
 };
 local color = '{914dff}';
@@ -42,7 +46,9 @@ local Game = {
     },
     state = GameState.Menu,
     money = 9999,
-    heroToPlace = nil
+    heroToPlace = nil,
+    startedAt = os.time(),
+    lastGameDuration = 0
 };
 
 function Game.destroy()
@@ -68,6 +74,7 @@ function Game.start()
     setCharCoordinates(PLAYER_PED, Map.pedPos.x, Map.pedPos.y, Map.pedPos.z);
     setCharHeading(PLAYER_PED, Map.pedHeading);
     Game.state = GameState.Playing;
+    Game.startedAt = os.time();
     RakNet.nop = true;
 end
 
@@ -96,16 +103,18 @@ function main()
         elseif (Game.state == GameState.None) then
             Game.state = GameState.Menu;
         end
-        Utils.msg('Game state was changed to:', Game.state);
+        Utils.debugMsg('Game state was changed to:', Game.state);
     end);
     sampRegisterChatCommand('pvz.money', function(amount)
         Game.money = tonumber(amount) or 1000;
         Utils.msg('Money set to', color, Game.money);
     end);
-    sampRegisterChatCommand('pvz.pool', function()
-        Utils.msg('Enemy pool size:', #Enemies.pool);
-        Utils.msg('Hero pool size:', #Heroes.pool);
-    end);
+    if (DEV) then
+        sampRegisterChatCommand('pvz.pool', function()
+            Utils.debugMsg('Enemy pool size:', #Enemies.pool);
+            Utils.debugMsg('Hero pool size:', #Heroes.pool);
+        end);
+    end
     while (true) do
         wait(0);
         if (Game.state == GameState.Playing) then
@@ -143,7 +152,8 @@ function main()
             Map.process(Enemies.pool, {
                 onEnemyReachedFinishZone = function()
                     Game.destroy();
-                    Utils.msg('Ha-ha, you loose!');
+                    Game.lastGameDuration = os.time() - Game.startedAt;
+                    Utils.msg('Ha-ha, you loose! Match duration:', color, Game.lastGameDuration, '{ffffff}seconds!');
                 end,
                 onSunTaked = function()
                     Game.money = Game.money + 50;
@@ -154,7 +164,7 @@ function main()
                     local type = math.random(1, 1);
                     math.randomseed(os.time() * math.random(1, 10));
                     local line = math.random(1, 5);
-                    Utils.msg('Spawning enemy with type', type, 'on line', line);
+                    Utils.debugMsg('Spawning enemy with type', type, 'on line', line);
                     Enemies.Enemy:new(type, line);
                     Map.lastEnemySpawned = os.clock();
                 end
@@ -166,6 +176,7 @@ end
 imgui.OnInitialize(function()
     imgui.GetIO().IniFilename = nil;
     uiComponents.logo.texture = imgui.CreateTextureFromFileInMemory(imgui.new('const char*', uiComponents.logo.base85), #uiComponents.logo.base85);
+    uiComponents.sun.texture = imgui.CreateTextureFromFileInMemory(imgui.new('const char*', uiComponents.sun.base85), #uiComponents.sun.base85);
 
     Heroes.loadTextures();
 
@@ -183,7 +194,7 @@ end);
 imgui.OnFrame(
     function() return Game.state ~= GameState.None end,
     function(thisWindow)
-        thisWindow.HideCursor = true;
+        thisWindow.HideCursor = DEV;
 
         table.foreach(Enemies.pool, function(k, v)
             uiComponents.healthBar(v, true);
@@ -209,15 +220,16 @@ imgui.OnFrame(
                 style, ---@diagnostic disable-line
                 Heroes.list,
                 Game.money,
+                uiComponents,
                 function(heroIndex)
-                    Utils.msg('clicked');
+                    Utils.debugMsg('clicked');
                     local hero = Heroes.list[heroIndex];
                     if (not hero) then
-                        return Utils.msg('Error, invalid hero index!');
+                        return Utils.debugMsg('Error, invalid hero index!');
                     end
                     if (Game.money >= hero.price) then
                         Game.heroToPlace = hero;
-                        Utils.msg('Place hero to any grid section. Click RMB to cancel.');
+                        Utils.debugMsg('Place hero to any grid section. Click RMB to cancel.');
                     else
                         sampAddChatMessage('Dear Retard, you have not enough money to purchase this hero!', -1);
                     end
