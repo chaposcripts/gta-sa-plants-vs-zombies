@@ -5,4 +5,4 @@
 3. connect to any SA:MP server and use `/pvz`
    
 ## Building:
-1. lubu.exe lubu.json
+1. go run generate-config.go && lubu.exe bundle-config.json
