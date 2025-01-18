@@ -5,22 +5,13 @@ local Map = {
     pos = Vector3D(0, 0, 100),
     pedPos = Vector3D(-9.5483312606812, 9.7751541137695, 101.42999267578),
     pedHeading = 180,
-    vehicles = {},
     pool = {},
     lastEnemySpawned = os.clock()
 };
 
-local VEHICLE_MODEL = 572;
 local GRID_SIZE = 5;
 
 function Map.destroy()
-    for _, vehicle in pairs(Map.vehicles) do
-        if (doesVehicleExist(vehicle)) then
-            print('deleting veh with handle', vehicle);
-            deleteCar(vehicle);
-        end
-    end
-
     print('deleting all objects, count:', #Map.pool);
     for _, object in pairs(Map.pool) do
         print('deleting obj', object.handle);
@@ -43,7 +34,7 @@ function Map.findAllPedsInGrid(pos)
     return
 end
 
-function Map.init()
+function Map.init(Vehicles)
     -- Create ground (grass)
     table.insert(Map.pool, Object:new(19550, Map.pos, Vector3D(0, 0, 0), true, 1, 'floor'));
     
@@ -75,19 +66,12 @@ function Map.init()
         end
     end
 
-    -- Spawn vehicles (enemiez "dead-zone")
-    if (not hasModelLoaded(VEHICLE_MODEL)) then ---@diagnostic disable-line
-        requestModel(VEHICLE_MODEL); ---@diagnostic disable-line
-        loadAllModelsNow();
-    end
-    for vehicleIndex = 1, 5 do
-        local newVehicleHandle = createCar(VEHICLE_MODEL, Map.pos.x - 5, Map.pos.y + (vehicleIndex - 1) * 5, 102); ---@diagnostic disable-line
-        table.insert(Map.vehicles, newVehicleHandle);
-        setCarHeading(newVehicleHandle, 270);
-        print('Vehicle created, handle =', newVehicleHandle);
+    -- Spawn vehicles (enemies "dead-zone")
+    for i = 1, 5 do
+        Vehicles.Vehicle:new(i);
     end
 
-    -- Remove all objects and vehicles on script unload
+    -- Remove all objects on script unload
     addEventHandler('onScriptTerminate', function(scr)
         if (scr == thisScript()) then
             Map.destroy();
@@ -142,44 +126,9 @@ function Map.findSpawnPointForLine(line)
     return Map.getGridPos(line, 9 + 2);
 end
 
-function Map.processVehicles(entityPool)
-    for vehicleIndex, vehicle in ipairs(Map.vehicles) do
-        
-        if (doesVehicleExist(vehicle)) then
-            -- Task car drive when enemy reached a "death zone"
-            local vehX, vehY, vehZ = getCarCoordinates(vehicle);
-            for entityIndex, entity in ipairs(entityPool) do
-                if (doesCharExist(entity.handle)) then
-                    local x, y, z = getCharCoordinates(entity.handle);
-                    if (getDistanceBetweenCoords3d(x, y, z, vehX, vehY, vehZ) <= 1.5) then
-                        -- setCharCollision(entity.handle, false);
-                        local vehicleEndPos = Map.getGridPos(vehicleIndex, 10);
-                        carGotoCoordinates(vehicle, vehicleEndPos.x, vehicleEndPos.y, vehicleEndPos.z);
-                    end
-
-                    -- Kill all collided enemies
-                    if (isCharTouchingVehicle(entity.handle, vehicle)) then
-                        print('killed ped', entity.handle, 'reason: vehicle collision - ', vehicle);
-                        entity:death();
-                    end
-                end
-            end
-
-            -- Remove vehicle if it was used
-            if (vehX >= 43) then
-                print('Vehicle out of map');
-                deleteCar(vehicle);
-                Map.vehicles[vehicleIndex] = nil;
-            end
-        end
-    end
-end
-
 ---@param enemyPool any
----@param callbacks {onSunTaked: fun(), spawnEnemy: fun(line: number)}
+---@param callbacks {onSunTaked: fun(), spawnEnemy: fun(line: number), onEnemyReachedFinishZone: fun()}
 function Map.process(enemyPool, callbacks)
-    Map.processVehicles(enemyPool)
-    
     -- Process sun
     if (wasKeyPressed(VK_LBUTTON)) then
         local pos, colpoint = Map.getPointerPos();
@@ -191,6 +140,14 @@ function Map.process(enemyPool, callbacks)
                     deleteObject(handle);
                 end
             end
+        end
+    end
+
+    for _, enemy in ipairs(enemyPool) do
+        if (select(1, getCharCoordinates(enemy.handle)) <= -5) then
+            enemy:destroy();
+            callbacks.onEnemyReachedFinishZone();
+            return;
         end
     end
 

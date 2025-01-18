@@ -41,7 +41,7 @@ local Game = {
         pos = Vector3D(0, 0, 0)
     },
     state = GameState.Menu,
-    money = 200,
+    money = 9999,
     heroToPlace = nil
 };
 
@@ -54,22 +54,24 @@ function Game.destroy()
     Camera.restore();
     RakNet.nop = false;
 end
-
+local Vehicles = require('vehicle');
 function Game.start()
     Game.saved = {
         heading = getCharHeading(PLAYER_PED),
         pos = Vector3D(getCharCoordinates(PLAYER_PED))
     };
         
-    Map.init();
+    Map.init(Vehicles);
     Enemies.init();
     Camera.init(Vector3D(Map.pos.x + 17, Map.pos.y - 1, Map.pos.z + 20), Vector3D(Map.pos.x + 17, Map.pos.y + 11, Map.pos.z));
-    -- Camera.update();
+    Camera.update();
     setCharCoordinates(PLAYER_PED, Map.pedPos.x, Map.pedPos.y, Map.pedPos.z);
     setCharHeading(PLAYER_PED, Map.pedHeading);
     Game.state = GameState.Playing;
     RakNet.nop = true;
 end
+
+
 
 addEventHandler('onScriptTerminate', function(scr)
     if (scr == thisScript()) then
@@ -84,6 +86,7 @@ function main()
     Utils.msg(('Plants Vs Zombies - GTA:SA Edition by %schapo {ffffff}a.k.a %smoujeek'):format(color, color));
     Utils.msg(('See %sgithub.com/chaposcripts'):format(color));
     Heroes.init();
+    Vehicles.init();
     sampRegisterChatCommand('pvz', function()
         if (Game.state == GameState.Playing) then
             Game.state = GameState.Menu;
@@ -93,7 +96,7 @@ function main()
         elseif (Game.state == GameState.None) then
             Game.state = GameState.Menu;
         end
-        Utils.msg('Current state:', Game.state);
+        Utils.msg('Game state was changed to:', Game.state);
     end);
     sampRegisterChatCommand('pvz.money', function(amount)
         Game.money = tonumber(amount) or 1000;
@@ -105,8 +108,8 @@ function main()
     end);
     while (true) do
         wait(0);
-        print(Game.state);
         if (Game.state == GameState.Playing) then
+            Vehicles.process(Enemies.pool, Heroes.pool);
             local gp = Map.getGridPos(1, 0);
             local x, y = convert3DCoordsToScreen(gp.x, gp.y, gp.z);
             renderDrawPolygon(x, y, 10, 10, 10, 10, 0xFF00ff00)
@@ -134,18 +137,14 @@ function main()
                 end
             end
 
-            -- Check enemies position, X <= 0 == zombies won
-            table.foreach(Enemies.pool, function(_, enemy)
-                if (doesCharExist(enemy.handle) and select(1, getCharCoordinates(enemy.handle)) <= 0) then
-                    Game.destroy();
-                    Utils.msg('You loose!');
-                end
-            end);
-
             -- Processing
             Heroes.process(Enemies.pool);
             Enemies.process(Enemies.pool, Heroes.pool);
             Map.process(Enemies.pool, {
+                onEnemyReachedFinishZone = function()
+                    Game.destroy();
+                    Utils.msg('Ha-ha, you loose!');
+                end,
                 onSunTaked = function()
                     Game.money = Game.money + 50;
                     printStringNow('~y~+50', 1250);

@@ -41,6 +41,16 @@ function Utils.bringVec3To(from, to, start_time, duration)
     return (timer > duration) and to or from, false
 end
 
+function Utils.mergeTable(t1, t2)
+    local merged = {};
+    for _, t in ipairs({ t1, t2 }) do
+        for k, v in ipairs(t) do
+            table.insert(merged, v);;
+        end
+    end
+    return merged;
+end
+
 ---@param path string directory
 ---@param ftype string|string[] file extension
 ---@return string[] files names

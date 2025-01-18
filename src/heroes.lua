@@ -54,22 +54,24 @@ function Heroes.init()
     end
     Heroes.initialized = true;
     print('Loading heroes');
-    for _, file in ipairs(Utils.getFilesInPath('X:\\SAMP Medium PC by chapo\\moonly\\pvz\\src\\heroes', '*.lua')) do
-        if (file ~= 'init.lua') then
-            table.insert(Heroes.list, require('heroes.' .. file:sub(1, #file - 4)));
-            print('INFO: Loaded hero ', file)
+    if (DEV) then
+        for _, file in ipairs(Utils.getFilesInPath('X:\\SAMP Medium PC by chapo\\moonly\\pvz\\src\\heroes', '*.lua')) do
+            if (file ~= 'init.lua') then
+                table.insert(Heroes.list, require('heroes.' .. file:sub(1, #file - 4)));
+                print('INFO: Loaded hero ', file)
+            end
         end
+    else
+        Heroes.list = {
+            require('heroes.sunflower'),
+            require('heroes.pistol'),
+            require('heroes.rifle'),
+            require('heroes.bigboy'),
+            require('heroes.boxer')
+        };
     end
-    -- Heroes.list = {
-    --     require('heroes.sunflower'),
-    --     require('heroes.pistol'),
-    --     require('heroes.rifle'),
-    --     require('heroes.big-boy'),
-    --     require('heroes.boxer')
-    -- };
-
+    
     local modelsToLoad, animationsToLoad = {}, {};
-
     for heroIndex, hero in ipairs(Heroes.list) do
         table.insert(modelsToLoad, hero.model or nil);
         table.insert(modelsToLoad, hero.weapon or nil);
@@ -202,7 +204,7 @@ function Heroes.drawEntityHealthBar(entity)
     BGDL:AddText(pos + imgui.ImVec2(GUI_BAR_SIZE.x + 5, -7), 0xFFFFFFFF, tostring(entity.health));
 end
 
-function Heroes.Hero:die()
+function Heroes.Hero:kill()
     setCharCoordinates(self.handle, -100, -100, -100);
     self.target = nil;
     self.noTargetRequired = true;
@@ -214,7 +216,7 @@ end
 function Heroes.Hero:dealDamage(damage, from)
     self.health = self.health - from.damage;
     if (self.health <= 0) then
-        self:die();
+        self:kill();
     end
     if (self.takeDamageAnimation) then
         taskPlayAnim(self.handle, self.takeDamageAnimation.name, self.takeDamageAnimation.file, 4.0, false, true, true, true, 0);

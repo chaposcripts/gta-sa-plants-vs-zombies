@@ -109,7 +109,7 @@ function Enemies.Enemy:setCoordinates(pos)
     writeMemory(posPtr + 8, 4, representFloatAsInt(pos.z), false);
 end
 
-function Enemies.Enemy:death()
+function Enemies.Enemy:kill()
     setCharCoordinates(self.handle, 0, 0, -100);
     self.disableProcess = true;
 end
@@ -134,9 +134,8 @@ function Enemies.Enemy:process(heroPool)
     -- print('Processing enemy', self.handle);
     if (not self.disableProcess) then
         local currentPos = Vector3D(getCharCoordinates(self.handle));
-        
-        local targetEndGrid = Map.getGridPos(self.line, 0);
 
+        local targetEndGrid = Map.getGridPos(self.line, 0);
         targetEndGrid.z = targetEndGrid.z + 1;
         local isPlantFound, colpoint = processLineOfSight(currentPos.x, currentPos.y, currentPos.z, targetEndGrid.x, targetEndGrid.y, targetEndGrid.z, false, false, true, false, false, false, false, false);
         local distanceToTarget = colpoint == nil and -1 or getDistanceBetweenCoords3d(currentPos.x, currentPos.y, currentPos.z, colpoint.pos[1], colpoint.pos[2], colpoint.pos[3]);
@@ -144,7 +143,7 @@ function Enemies.Enemy:process(heroPool)
         if (not isPlantFound or distanceToTarget > 1.5) then
             -- taskCharSlideToCoord(self.handle, 0, 0, 0, 0, 1);
             if (os.clock() - self.lastXUpdate > ENEMY_X_UPDATE_SPEED) then
-                self:setCoordinates(Vector3D(currentPos.x - (DEV and 0.01 or 0.01), currentPos.y, currentPos.z));
+                self:setCoordinates(Vector3D(currentPos.x - (DEV and 0.3 or 0.01), currentPos.y, currentPos.z));
                 self.lastXUpdate = os.clock();
             end
         else
@@ -195,13 +194,18 @@ end
 function Enemies.Enemy:dealDamage(damage, from)
     self.health = self.health - damage;
     if (self.health <= 0) then
-        self:death();
+        self:kill();
     end
 end
 
 function Enemies.Enemy:destroy()
     if (doesCharExist(self.handle)) then
         deleteChar(self.handle);
+        for k, v in ipairs(Enemies.pool) do
+            if (v.handle == self.handle) then
+                table.remove(Enemies.pool, k);
+            end
+        end
         print('Enemy was destroyed, handle = ', self.handle);
     end
 end
@@ -220,22 +224,6 @@ function Enemies.Enemy:new(type, line, disableMovement)
     clearCharTasksImmediately(ped);
     setCharCoordinates(ped, getCharCoordinates(ped));
     setCharHeading(ped, 90);
-    -- local instance = {
-    --     damage = EnemyData[type].damage,
-    --     lastAttack = os.clock(),
-    --     attackInterval = 5,
-    --     handle = ped,
-    --     line = line,
-    --     route = {
-    --         from = spawnPos,
-    --         to = Map.getGridPos(line, 0)
-    --     },
-    --     grid = {
-    --         line = line
-    --     },
-    --     spawnedAt = os.clock(),
-    --     disableProcess = false
-    -- };
     instance.x = spawnPos.x;
     instance.lastXUpdate = os.clock();
     instance.health = instance.maxHealth;
