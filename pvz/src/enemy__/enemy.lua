@@ -1,0 +1,3 @@
+local Enemy = {};
+
+return Enemy;

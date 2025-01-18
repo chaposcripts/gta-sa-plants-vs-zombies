@@ -1,0 +1,19 @@
+{
+    "Lua.workspace.library": [
+        "C:\\Users\\admin\\Documents\\LuaAddons",
+        "C:/Users/admin/AppData/Roaming/Code/User/globalStorage/sumneko.lua/addonManager/addons/luafilesystem/module/library",
+        "C:/Users/admin/AppData/Roaming/Code/User/globalStorage/sumneko.lua/addonManager/addons/moonloader/module/library"
+    ],
+    "Lua.workspace.checkThirdParty": false,
+    "Lua.runtime.path": [
+        "?/init.lua"
+    ],
+    "Lua.runtime.version": "LuaJIT",
+    "Lua.workspace.ignoreDir": [
+        ".vscode"
+    ],
+    "Lua.runtime.pathStrict": true,
+    "Lua.diagnostics.globals": [
+        "lfs"
+    ]
+}
