@@ -1,3 +1,4 @@
+---@diagnostic disable:duplicate-doc-field
 local Vector3D = require('vector3d');
 local Object = {};
 local pool = {};

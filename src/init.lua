@@ -1,8 +1,11 @@
----@diagnostic disable:deprecated,lowercase-global
+---@diagnostic disable:deprecated,lowercase-global,duplicate-doc-field
 ---@class Vector3D
 ---@field x number
 ---@field y number
 ---@field z number
+
+---@alias Animation {name: string, file: string}
+
 script_name('Plants Vs Zombies - GTA:SA Edition');
 script_author('chapo a.k.a moujeek');
 script_url('https://t.me/chaposcripts');
@@ -16,6 +19,7 @@ local Vector3D = require('vector3d');
 local Map = require('map');
 local Camera = require('camera');
 local Utils = require('utils');
+local Vehicles = require('vehicle');
 local Heroes = require('heroes');
 local Enemies = require('enemy');
 local RakNet = require('raknet');
@@ -44,7 +48,7 @@ local Game = {
         heading = 0,
         pos = Vector3D(0, 0, 0)
     },
-    state = GameState.Menu,
+    state = DEV and GameState.Menu or GameState.None,
     money = 9999,
     heroToPlace = nil,
     startedAt = os.time(),
@@ -55,22 +59,27 @@ function Game.destroy()
     Heroes.destroy();
     Enemies.destroy();
     Map.destroy();
+    Vehicles.destroy();
     Game.state = GameState.Menu;
     setCharCoordinates(PLAYER_PED, Game.saved.pos.x, Game.saved.pos.y, Game.saved.pos.z);
     Camera.restore();
     RakNet.nop = false;
+    -- Utils.msg('Game.destroy()');
 end
-local Vehicles = require('vehicle');
+
 function Game.start()
     Game.saved = {
         heading = getCharHeading(PLAYER_PED),
         pos = Vector3D(getCharCoordinates(PLAYER_PED))
     };
-        
+    Heroes.init();
+    Vehicles.init();
     Map.init(Vehicles);
     Enemies.init();
     Camera.init(Vector3D(Map.pos.x + 17, Map.pos.y - 1, Map.pos.z + 20), Vector3D(Map.pos.x + 17, Map.pos.y + 11, Map.pos.z));
-    Camera.update();
+    if (not DEV) then
+        Camera.update();
+    end
     setCharCoordinates(PLAYER_PED, Map.pedPos.x, Map.pedPos.y, Map.pedPos.z);
     setCharHeading(PLAYER_PED, Map.pedHeading);
     Game.state = GameState.Playing;
@@ -78,22 +87,17 @@ function Game.start()
     RakNet.nop = true;
 end
 
-
-
-addEventHandler('onScriptTerminate', function(scr)
-    if (scr == thisScript()) then
-        if (Game.saved.pos.x ~= 0) then
-            setCharCoordinates(PLAYER_PED, Game.saved.pos.x, Game.saved.pos.y, Game.saved.pos.z);
-        end
-    end
-end);
-
 function main()
     while not isSampAvailable() do wait(0) end
     Utils.msg(('Plants Vs Zombies - GTA:SA Edition by %schapo {ffffff}a.k.a %smoujeek'):format(color, color));
     Utils.msg(('See %sgithub.com/chaposcripts'):format(color));
-    Heroes.init();
-    Vehicles.init();
+    addEventHandler('onScriptTerminate', function(scr)
+        if (scr == thisScript()) then
+            if (Game.saved.pos.x ~= 0) then
+                setCharCoordinates(PLAYER_PED, Game.saved.pos.x, Game.saved.pos.y, Game.saved.pos.z);
+            end
+        end
+    end);
     sampRegisterChatCommand('pvz', function()
         if (Game.state == GameState.Playing) then
             Game.state = GameState.Menu;
@@ -114,10 +118,26 @@ function main()
             Utils.debugMsg('Enemy pool size:', #Enemies.pool);
             Utils.debugMsg('Hero pool size:', #Heroes.pool);
         end);
+        sampRegisterChatCommand('pvz.enemy', function(arg)
+            local args = arg:match('(%d+) (%d+)');
+            if (not args) then
+                return Utils.debugMsg('Invalid args, use /pvz.enemy [line] [type]');
+            end
+            local enemyType, line = tonumber(args[2]) or 1, tonumber(args[1]) or 1;
+            Enemies.Enemy:new(enemyType, line);
+            Utils.debugMsg('Spawned enemy with type', enemyType, 'on line', line);
+        end);
     end
     while (true) do
         wait(0);
         if (Game.state == GameState.Playing) then
+            -- Disable player controls
+            if (not DEV) then
+                for buttonId = 0, 16 do
+                    setGameKeyState(buttonId, 0);
+                end
+            end
+
             Vehicles.process(Enemies.pool, Heroes.pool);
             local gp = Map.getGridPos(1, 0);
             local x, y = convert3DCoordsToScreen(gp.x, gp.y, gp.z);
@@ -160,6 +180,7 @@ function main()
                     printStringNow('~y~+50', 1250);
                 end,
                 spawnEnemy = function(type)
+                    if (DEV) then return end
                     math.randomseed(os.time() * math.random(1, 10));
                     local type = math.random(1, 1);
                     math.randomseed(os.time() * math.random(1, 10));
@@ -195,13 +216,6 @@ imgui.OnFrame(
     function() return Game.state ~= GameState.None end,
     function(thisWindow)
         thisWindow.HideCursor = DEV;
-
-        table.foreach(Enemies.pool, function(k, v)
-            uiComponents.healthBar(v, true);
-        end);
-        table.foreach(Heroes.pool, function(k, v)
-            uiComponents.healthBar(v, false);
-        end);
         
         local res = imgui.ImVec2(getScreenResolution());
         local style = imgui.GetStyle();
@@ -215,6 +229,13 @@ imgui.OnFrame(
                 end
             });
         elseif (Game.state == GameState.Playing) then
+            -- Health Bars
+            for listIndex, list in ipairs({ Enemies.pool, Heroes.pool }) do
+                for _, hero in ipairs(list) do
+                    uiComponents.healthBar(hero, listIndex == 1);
+                end
+            end
+            
             uiComponents.gameInterface(
                 res,
                 style, ---@diagnostic disable-line
@@ -225,13 +246,13 @@ imgui.OnFrame(
                     Utils.debugMsg('clicked');
                     local hero = Heroes.list[heroIndex];
                     if (not hero) then
-                        return Utils.debugMsg('Error, invalid hero index!');
+                        return Utils.msg('Error, invalid hero index!');
                     end
                     if (Game.money >= hero.price) then
                         Game.heroToPlace = hero;
-                        Utils.debugMsg('Place hero to any grid section. Click RMB to cancel.');
+                        Utils.msg('Place hero to any grid section. Click RMB to cancel.');
                     else
-                        sampAddChatMessage('Dear Retard, you have not enough money to purchase this hero!', -1);
+                        Utils.msg('You have not enough money to purchase this hero!');
                     end
                 end
             );

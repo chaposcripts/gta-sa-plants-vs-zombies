@@ -1,25 +1,29 @@
 {
-    "main": "/src/init.lua",
+    "main": "\\src\\init.lua",
+    "output": "\\dist\\pvz-release.lua",
     "modules": {
-        "map": "/src/map.lua",
-        "camera": "/src/camera.lua",
-        "utils": "/src/utils.lua",
-        "object": "/src/object.lua",
-        "vehicle": "/src/vehicle.lua",
-        "heroes": "/src/heroes.lua",
-        "enemy": "/src/enemy.lua",
-        "raknet": "/src/raknet.lua",
-        "ui.main-menu": "/src/ui/main-menu.lua",
-        "ui.game-interface": "/src/ui/game-interface.lua",
-        "ui.health-bar": "/src/ui/health-bar.lua",
-        "ui.link": "/src/ui/link.lua",
-        "resource.logo": "/src/resource/logo.lua",
-        "resource.sun": "/src/resource/sun.lua",
-        "heroes.sunflower": "/src/heroes/sunflower.lua",
-        "heroes.pistol": "/src/heroes/pistol.lua",
-        "heroes.rifle": "/src/heroes/rifle.lua",
-        "heroes.bigboy": "/src/heroes/bigboy.lua",
-        "heroes.boxer": "/src/heroes/boxer.lua"
+        "camera": "\\src\\camera.lua",
+        "enemy": "\\src\\enemy.lua",
+        "heroes": "\\src\\heroes.lua",
+        "heroes.bigboy": "\\src\\heroes\\bigboy.lua",
+        "heroes.boxer": "\\src\\heroes\\boxer.lua",
+        "heroes.pistol": "\\src\\heroes\\pistol.lua",
+        "heroes.rifle": "\\src\\heroes\\rifle.lua",
+        "heroes.sunflower": "\\src\\heroes\\sunflower.lua",
+        "init": "\\src\\init.lua",
+        "map": "\\src\\map.lua",
+        "object": "\\src\\object.lua",
+        "raknet": "\\src\\raknet.lua",
+        "resource.logo": "\\src\\resource\\logo.lua",
+        "resource.sun": "\\src\\resource\\sun.lua",
+        "ui.game-interface": "\\src\\ui\\game-interface.lua",
+        "ui.health-bar": "\\src\\ui\\health-bar.lua",
+        "ui.link": "\\src\\ui\\link.lua",
+        "ui.main-menu": "\\src\\ui\\main-menu.lua",
+        "utils": "\\src\\utils.lua",
+        "vehicle": "\\src\\vehicle.lua"
     },
-    "output": "/dist/pvz-release.lua"
+    "const": {
+        "LUBU_BUILDING_DATE": 1737280809
+    }
 }

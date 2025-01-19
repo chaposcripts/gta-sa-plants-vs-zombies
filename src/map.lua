@@ -42,11 +42,17 @@ function Map.init(Vehicles)
     table.insert(Map.pool, Object:new(3639, Vector3D(Map.pos.x - 15, Map.pos.y + 10, Map.pos.z), Vector3D(0, 0, 90), true, 1, 'house'));
 
     -- Decorations
-    table.insert(Map.pool, Object:new(6313, Vector3D(Map.pos.x + 10, Map.pos.y + 40, Map.pos.z - 10), false, 1, 'mountain'));
+    -- table.insert(Map.pool, Object:new(6313, Vector3D(Map.pos.x + 10, Map.pos.y + 40, Map.pos.z - 10), false, 1, 'mountain'));
+    table.insert(Map.pool, Object:new(18363, Vector3D(Map.pos.x, Map.pos.y + 60, Map.pos.z - 70), Vector3D(0, 0, 0), false, 1, 'mountain'));
+    table.insert(Map.pool, Object:new(873, Vector3D(Map.pos.x + 15, Map.pos.y + 30, Map.pos.z), Vector3D(0, 0, 90), false, 1, 'grass1'));
+    table.insert(Map.pool, Object:new(874, Vector3D(Map.pos.x + 35, Map.pos.y + 30, Map.pos.z), Vector3D(0, 0, 90), false, 1, 'grass1'));
+    table.insert(Map.pool, Object:new(873, Vector3D(Map.pos.x + 50, Map.pos.y + 30, Map.pos.z), Vector3D(0, 0, 90), false, 1, 'grass1'));
+    table.insert(Map.pool, Object:new(762, Vector3D(Map.pos.x + 30, Map.pos.y + 30, Map.pos.z - 5), Vector3D(0, 0, 90), false, 1, 'tree1'));
+    
     table.insert(Map.pool, Object:new(18270, Vector3D(Map.pos.x + 20, Map.pos.y + 40, Map.pos.z - 21), Vector3D(0, 0, 270), false, 1, 'trees'));
     table.insert(Map.pool, Object:new(8147, Vector3D(Map.pos.x + 20, Map.pos.y + 23, Map.pos.z - 2), Vector3D(0, 0, 90), false, 1, 'wall'));
     table.insert(Map.pool, Object:new(17000, Vector3D(Map.pos.x, Map.pos.y + 30, Map.pos.z), Vector3D(0, 0, 0), false, 1, 'tower'));
-
+    table.insert(Map.pool, Object:new(10571, Vector3D(Map.pos.x, Map.pos.y - 20, Map.pos.z), Vector3D(0, 0, 90), false, 1, ''));
     -- Create grid
     for line = 1, 5 do
         for section = 1, 9 do

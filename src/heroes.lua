@@ -1,3 +1,4 @@
+---@diagnostic disable:duplicate-doc-field
 local Utils = require('utils');
 local imgui = require('mimgui');
 local Map = require('map');
@@ -124,6 +125,18 @@ function Heroes.process(enemyPool)
     end
 end
 
+function Heroes.isPedHero(entity)
+    if (type(entity) == 'table') then
+        entity = entity.handle;
+    end
+    assert(entity);
+    for k, v in ipairs(Heroes.pool) do
+        if (entity == v.handle) then
+            return true;
+        end
+    end
+end
+
 function Heroes.Hero:drawDebugInfo()
     if (isCharOnScreen(self.handle)) then
         local x, y = convert3DCoordsToScreen(getCharCoordinates(self.handle));
@@ -242,7 +255,7 @@ function Heroes.Hero:updateTarget()
         local peds = Map.findPedsInGrid(self.grid.line, index);
         if (#peds > 0) then
             for _, ped in ipairs(peds) do
-                if (ped ~= self.handle and ped ~= PLAYER_PED) then
+                if (not Heroes.isPedHero(ped) and ped ~= self.handle and ped ~= PLAYER_PED) then
                     table.insert(enemies, {
                         handle = ped,
                         dist = getDistanceBetweenCoords3d(heroX, heroY, heroZ, getCharCoordinates(ped))

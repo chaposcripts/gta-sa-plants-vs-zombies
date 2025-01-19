@@ -5,8 +5,8 @@ local Utils = {};
 local CPed_SetModelIndex = ffi.cast('void(__thiscall *)(void*, unsigned int)', 0x5E4880);
 
 function Utils.setCharModel(ped, model)
-    assert(doesCharExist(ped), 'ped not found');
-    if not hasModelLoaded(model) then
+    if not (doesCharExist(ped)) then return Utils.debugMsg('ped not found') end
+    if (not hasModelLoaded(model)) then
         requestModel(model);
         loadAllModelsNow();
     end

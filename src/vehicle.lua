@@ -1,3 +1,4 @@
+---@diagnostic disable:duplicate-doc-field
 local Utils = require('utils');
 local Map = require('map');
 local font = renderCreateFont('arial', 8, 5); -- For debug info
@@ -18,14 +19,16 @@ setmetatable(Vehicles.Vehicle, {__call = function(t, ...)
 end});
 
 function Vehicles.destroy()
-    for _, hero in ipairs(Vehicles.pool) do
-        hero:destroy();
+    print('Vehicles.destroy(), veh pool len', #Vehicles.pool);
+    for _, vehicle in ipairs(Vehicles.pool) do
+        vehicle:destroy();
+        print('Destroyed vehicle', vehicle.handle);
     end
 end
 
 function Vehicles.init()
-    if (not hasModelLoaded(VEHICLE_MODEL)) then
-        requestModel(VEHICLE_MODEL);
+    if (not hasModelLoaded(VEHICLE_MODEL)) then ---@diagnostic disable-line
+        requestModel(VEHICLE_MODEL); ---@diagnostic disable-line
         loadAllModelsNow();
     end
 
@@ -43,7 +46,7 @@ function Vehicles.process(enemyPool, heroPool)
 end
 
 function Vehicles.Vehicle:process(enemyPool, heroPool)
-    print(#enemyPool)
+    if (not doesVehicleExist(self.handle)) then return end
     if (self.movementStartTime) then
         local newX = Utils.bringFloatTo(self.startX, self.endX, self.movementStartTime, 5);
         setCarCoordinates(self.handle, newX, self.spawnPos.y, self.spawnPos.z);
@@ -81,14 +84,17 @@ function Vehicles.Vehicle:startMovement()
 end
 
 function Vehicles.Vehicle:destroy()
+    Utils.debugMsg('Vehicles.Vehicle:destroy()');
     if (doesVehicleExist(self.handle)) then
-        print('deleting veh with handle', self.handle);
+        Utils.debugMsg('deleting veh with handle', self.handle);
         deleteCar(self.handle);
         for k, v in ipairs(Vehicles.pool) do
             if (v.handle == self.handle) then
-                table.remove(Vehicles.pool, k);
+                -- table.remove(Vehicles.pool, k);
             end
         end
+    else
+        Utils.debugMsg('unable to delete veh, not found')
     end
 end
 

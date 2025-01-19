@@ -1,3 +1,4 @@
+---@diagnostic disable:duplicate-doc-field,duplicate-doc-alias
 local Map = require('map');
 local Utils = require('utils');
 local Vector3D = require('vector3d');
@@ -135,7 +136,7 @@ function Enemies.Enemy:process(heroPool)
         if (not isPlantFound or distanceToTarget > 1.5) then
             -- taskCharSlideToCoord(self.handle, 0, 0, 0, 0, 1);
             if (os.clock() - self.lastXUpdate > ENEMY_X_UPDATE_SPEED) then
-                self:setCoordinates(Vector3D(currentPos.x - (DEV and 0.3 or 0.01), currentPos.y, currentPos.z));
+                self:setCoordinates(Vector3D(currentPos.x - (DEV and 0.03 or 0.01), currentPos.y, currentPos.z));
                 self.lastXUpdate = os.clock();
                 if (not self.isWalking) then
                     taskCharSlideToCoord(self.handle, 0, 0, 0, 0, 1);
